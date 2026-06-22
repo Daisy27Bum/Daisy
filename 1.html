@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Writing Assistant | GenAI Teaching Tool</title>
+  <style>
+    :root {
+      --primary: #4f6ef7;
+      --bg: #f5f7ff;
+      --card: #fff;
+      --text: #2d3748;
+      --radius: 16px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Noto Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
+    .app-container {
+      max-width: 800px;
+      width: 100%;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.3rem;
+    }
+    .header p {
+      color: #4a5568;
+      font-size: 0.95rem;
+    }
+    .input-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      margin-bottom: 1.5rem;
+    }
+    .input-row {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    #essayTopic {
+      flex: 1 1 250px;
+      padding: 0.8rem 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    #essayTopic:focus { border-color: var(--primary); }
+    #gradeSelect {
+      padding: 0.8rem 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      background: white;
+    }
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.8rem 1.8rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn:hover { background: #3b57d9; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      font-size: 1.1rem;
+      color: var(--primary);
+      display: none;
+    }
+    .result-section {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      display: none;
+    }
+    .result-section h3 {
+      color: var(--primary);
+      margin-bottom: 0.8rem;
+      border-left: 4px solid var(--primary);
+      padding-left: 0.8rem;
+    }
+    .result-content {
+      white-space: pre-wrap;
+      line-height: 1.7;
+      background: #f9fafb;
+      padding: 1rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+    .copy-btn {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      background: #edf2f7;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .mock-notice {
+      font-size: 0.8rem;
+      color: #a0aec0;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">
+    <h1>📝 Writing Assistant</h1>
+    <p>Enter a topic → Get framework · Thematic vocabulary · Materials · Writing tips</p>
+  </div>
+
+  <div class="input-card">
+    <div class="input-row">
+      <input type="text" id="essayTopic" placeholder="e.g. My Role Model" value="My Ideal Job">
+      <select id="gradeSelect">
+        <option value="Elementary">Elementary</option>
+        <option value="Middle School" selected>Middle School</option>
+        <option value="High School">High School</option>
+      </select>
+      <button class="btn" id="generateBtn" onclick="generate()">✨ Generate</button>
+    </div>
+    <div class="mock-notice" style="margin-top:0.8rem;">ℹ️ This demo uses built‑in smart mock data. No API key needed.</div>
+  </div>
+
+  <div id="loadingDiv" class="loading">⏳ Generating content...</div>
+
+  <div id="resultDiv" class="result-section">
+    <h3>📋 Essay Framework</h3>
+    <div id="frameworkContent" class="result-content"></div>
+    <button class="copy-btn" onclick="copyContent('frameworkContent')">📋 Copy</button>
+
+    <h3 style="margin-top:1.5rem;">📚 Thematic Vocabulary</h3>
+    <div id="vocabContent" class="result-content"></div>
+    <button class="copy-btn" onclick="copyContent('vocabContent')">📋 Copy</button>
+
+    <h3 style="margin-top:1.5rem;">🧠 Suggested Materials</h3>
+    <div id="materialContent" class="result-content"></div>
+    <button class="copy-btn" onclick="copyContent('materialContent')">📋 Copy</button>
+
+    <h3 style="margin-top:1.5rem;">💡 Writing Tips</h3>
+    <div id="tipsContent" class="result-content"></div>
+    <button class="copy-btn" onclick="copyContent('tipsContent')">📋 Copy</button>
+  </div>
+</div>
+
+<script>
+  // Smart mock data generator – adapts content based on topic & grade
+  function getMockData(topic, grade) {
+    const gradeText = grade === 'Elementary' ? 'elementary' : (grade === 'Middle School' ? 'middle school' : 'high school');
+    return {
+      framework: `【Introduction】(approx. 80 words)
+- Hook: Start with a thought‑provoking question or a famous quote about “${topic}”.
+- Briefly state why “${topic}” matters to a ${gradeText} student.
+
+【Body】(approx. 250 words)
+- Paragraph 1: Share a personal story or experience related to “${topic}”.
+- Paragraph 2: Provide a positive example (a famous person or someone you know) and contrast it with a negative case to deepen the discussion.
+- Paragraph 3: Explain how this topic influences your daily life as a ${gradeText} student.
+
+【Conclusion】(approx. 80 words)
+- Summarize the main ideas and restate the importance of “${topic}”.
+- End with a forward‑looking statement or a call to action.`,
+      vocabulary: `Core words: ${topic}, aspiration, determination, perseverance, role model, inspiration, value${grade==='Elementary' ? ', dream, happiness' : ', critical thinking, responsibility, perspective'}
+Useful phrases:
+- strive for excellence
+- follow in someone’s footsteps
+- a stepping stone to success
+- make a difference in the world
+- overcome challenges with resilience`,
+      material: `Quotes:
+- “The future belongs to those who believe in the beauty of their dreams.” — Eleanor Roosevelt
+- “It does not matter how slowly you go as long as you do not stop.” — Confucius
+Real‑life examples:
+- Thomas Edison: failed thousands of times before inventing the light bulb.
+- Malala Yousafzai: fought for girls’ education despite tremendous obstacles.
+- A classmate who improved their grades through consistent effort.`,
+      tips: `1. 【Hook the reader】Start with an engaging opening that makes the reader curious about “${topic}”.
+2. 【Show, don’t tell】Use specific details and anecdotes instead of general statements.
+3. 【Balanced structure】Keep paragraphs focused – one main idea per paragraph.
+4. 【Smooth transitions】Use linking words (first, moreover, in contrast, therefore) to connect ideas.
+5. 【Proofread】Check for grammar and spelling before submitting your essay.`
+    };
+  }
+
+  function generate() {
+    const topic = document.getElementById('essayTopic').value.trim();
+    if (!topic) {
+      alert('Please enter an essay topic.');
+      return;
+    }
+    const grade = document.getElementById('gradeSelect').value;
+
+    document.getElementById('loadingDiv').style.display = 'block';
+    document.getElementById('resultDiv').style.display = 'none';
+    document.getElementById('generateBtn').disabled = true;
+
+    // Simulate processing time
+    setTimeout(() => {
+      const data = getMockData(topic, grade);
+      document.getElementById('frameworkContent').textContent = data.framework;
+      document.getElementById('vocabContent').textContent = data.vocabulary;
+      document.getElementById('materialContent').textContent = data.material;
+      document.getElementById('tipsContent').textContent = data.tips;
+
+      document.getElementById('loadingDiv').style.display = 'none';
+      document.getElementById('resultDiv').style.display = 'block';
+      document.getElementById('generateBtn').disabled = false;
+    }, 800);
+  }
+
+  function copyContent(elementId) {
+    const text = document.getElementById(elementId).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Copied to clipboard!');
+    });
+  }
+
+  // Auto-generate on page load
+  window.onload = () => { generate(); };
+</script>
+</body>
+</html>
